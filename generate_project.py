@@ -1,5 +1,5 @@
 from pathlib import Path
-import json, math, struct, wave, plistlib, re
+import json, math, struct, wave, plistlib, re, shutil
 
 root = Path(__file__).resolve().parent
 app = root / 'ONXPhone'
@@ -27,6 +27,9 @@ for name, frequencies in [('soft',(440,554)),('digital',(660,880))]:
 assets=app/'Assets.xcassets'; icons=assets/'AppIcon.appiconset'; icons.mkdir(parents=True,exist_ok=True)
 (assets/'Contents.json').write_text(json.dumps({'info':{'author':'xcode','version':1}}),encoding='utf-8')
 (icons/'Contents.json').write_text(json.dumps({'images':[{'filename':'Icon.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}}),encoding='utf-8')
+brand=assets/'ONXBrand.imageset'; brand.mkdir(parents=True,exist_ok=True)
+shutil.copy2(app/'brand_art.png',brand/'brand.png')
+(brand/'Contents.json').write_text(json.dumps({'images':[{'filename':'brand.png','idiom':'universal'}],'info':{'author':'xcode','version':1}}),encoding='utf-8')
 files=[('App.swift','sourcecode.swift','sources'),('CallKitAdapter.swift','sourcecode.swift','sources'),('phone-bridge.js','sourcecode.javascript','resources'),('ios-transport.js','sourcecode.javascript','resources'),('brand_art.png','image.png','resources'),('soft.wav','audio.wav','resources'),('digital.wav','audio.wav','resources'),('Assets.xcassets','folder.assetcatalog','resources'),('Info.plist','text.plist.xml','none')]
 def uid(i): return f'{i:024X}'
 objects=[]; refs=[]; source_builds=[]; resource_builds=[]

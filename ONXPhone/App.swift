@@ -33,7 +33,7 @@ final class WeakBridge: NSObject, WKScriptMessageHandler {
 
 final class PhoneModel: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate, UNUserNotificationCenterDelegate {
     @Published var settings = Vault.read().isEmpty
-    @Published var status = "Conectando…"
+    @Published var status = Vault.read().isEmpty ? "Sin enlace" : "Conectando…"
     @Published var incoming = false
     @Published var caller = ""
     @Published var error = ""
@@ -70,7 +70,7 @@ final class PhoneModel: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
         ticker = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             guard let self = self, self.foreground else { return }
             self.web.evaluateJavaScript("window.__onxPhonePoll && window.__onxPhonePoll()", completionHandler: nil)
-            if !self.callID.isEmpty && UserDefaults.standard.object(forKey: "callVibration") as? Bool != false { AudioServicesPlaySystemSound(kSystemSoundID_Vibrate) }
+            if self.incoming && UserDefaults.standard.object(forKey: "callVibration") as? Bool != false { AudioServicesPlaySystemSound(kSystemSoundID_Vibrate) }
         }
         if !Vault.read().isEmpty { load() }
     }
@@ -246,7 +246,7 @@ struct PhoneView: View {
             }
             if model.incoming {
                 VStack(spacing: 24) {
-                    Image("brand_art").resizable().scaledToFit().frame(width: 72, height: 72).clipShape(RoundedRectangle(cornerRadius: 20))
+                    Image("ONXBrand").resizable().scaledToFit().frame(width: 72, height: 72).clipShape(RoundedRectangle(cornerRadius: 20))
                     Text("LLAMADA ENTRANTE").font(.caption).tracking(2).foregroundColor(purple)
                     Text(model.caller).font(.largeTitle).multilineTextAlignment(.center)
                     Button("Contestar") { model.action("answer") }.buttonStyle(.borderedProminent).tint(.green)
@@ -273,7 +273,7 @@ struct PhoneView: View {
     var menu: some View {
         ScrollView {
             VStack(spacing: 22) {
-                Image("brand_art").resizable().scaledToFit().frame(width: 88, height: 88).clipShape(RoundedRectangle(cornerRadius: 25))
+                Image("ONXBrand").resizable().scaledToFit().frame(width: 88, height: 88).clipShape(RoundedRectangle(cornerRadius: 25))
                 Text("ONX phone").font(.largeTitle.weight(.medium))
                 Text("Tu ciudad, siempre cerca.").font(.subheadline).foregroundColor(.secondary)
                 if !Vault.read().isEmpty { Button("Abrir mi celular") { model.settings = false }.buttonStyle(.borderedProminent).tint(purple) }
