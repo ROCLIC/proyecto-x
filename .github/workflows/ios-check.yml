@@ -1,0 +1,35 @@
+name: Check ONX phone iOS
+on: [workflow_dispatch, push, pull_request]
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compile:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test JavaScript transport
+        run: |
+          npm ci --prefix tests --no-audit --no-fund
+          npm test --prefix tests
+      - name: Compile iPhone simulator app without signing
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          xcodebuild -version
+          xcodebuild -project ONXPhone.xcodeproj -scheme ONXPhone -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build -resultBundlePath artifacts/ios-build.xcresult CODE_SIGNING_ALLOWED=NO build 2>&1 | tee artifacts/ios-build.log
+      - name: Package simulator app
+        shell: bash
+        run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Debug-iphonesimulator/ONXPhone.app artifacts/ONX-phone-simulator.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ONX-phone-ios-check
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,0 +1,7 @@
+{
+  "name": "onx-phone-ios-transport-tests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "test": "node ios-transport.cjs" },
+  "devDependencies": { "jsdom": "26.1.0" }
+}

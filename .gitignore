@@ -1,0 +1,17 @@
+**/node_modules/
+**/__pycache__/
+build/
+DerivedData/
+artifacts/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+ONXPhone/Assets.xcassets/AppIcon.appiconset/Icon.png
+*.p8
+*.p12
+*.mobileprovision
+*.jks
+*.keystore
+signing-password.txt
+.env
+.env.*

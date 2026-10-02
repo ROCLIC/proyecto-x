@@ -1,0 +1,70 @@
+const {JSDOM} = require('jsdom');
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const source = fs.readFileSync(require('node:path').resolve(__dirname,'../assets/phone-bridge.js'),'utf8');
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function card(title,body,call=false){
+  return `<div style="position:relative;display:flex;align-items:flex-start;padding:0.75rem 0.85rem;border-top:1px solid transparent"><img src="https://static.onx.gg/game/fivem/phone/apps/calls.png"><div><p>${title}</p><span>${body}</span></div>${call?'<div tabindex="0" data-action="answer"><i class="fa-solid fa-phone"></i></div><div tabindex="0" data-action="reject"><i class="fa-solid fa-phone-slash"></i></div>':''}</div>`;
+}
+async function run(){
+  const dom=new JSDOM(`<!doctype html><html><head><title>onx.gg | Phone</title></head><body><div id="cards">${card('Anterior','Mensaje antiguo')}</div><div id="history" style="display:none">${card('Historial','Llamada entrante...',true)}</div><div id="phone" style="position:absolute;pointer-events:auto;min-height:648px;min-width:302.4px;width:28vh;height:60vh"></div></body></html>`, {url:'https://game-fivem-ui-es.onx.gg/',runScripts:'outside-only',pretendToBeVisual:true});
+  const w=dom.window, events=[];
+  w.eval(source);
+  const port={postMessage:e=>events.push(JSON.parse(e)),start(){},close(){},onmessage:null};
+  w.dispatchEvent(new w.MessageEvent('message',{data:'rp-phone-connect',ports:[port]}));
+  assert.equal(events.filter(e=>e.type==='notification').length,0,'No anuncia mensajes históricos al conectar');
+  assert.equal(events.filter(e=>e.type==='call').length,0,'No interpreta historial oculto como llamada activa');
+  assert.equal(events.find(e=>e.type==='status').value,'ready');
+  assert.equal(w.document.querySelector('#phone').style.left,'50%','Ajusta el teléfono sin modificar auth');
+  assert.match(w.document.querySelector('meta[name="viewport"]').content,/width=device-width/,'Usa el ancho real del dispositivo');
+  for(const [width,height] of [[320,568],[360,800],[390,844],[430,932],[800,360],[768,1024],[1024,768],[280,380],[390,250]]){
+    Object.defineProperty(w,'innerWidth',{value:width,configurable:true});Object.defineProperty(w,'innerHeight',{value:height,configurable:true});
+    w.dispatchEvent(new w.Event('resize'));
+    const scale=Number(w.document.querySelector('#phone').dataset.rpScale);
+    assert.ok(scale>0 && 302.4*scale<=width+0.001 && 648*scale<=height+0.001,`Cabe sin deformarse en ${width}x${height}`);
+    assert.equal(scale,Math.min(width/302.4,height/648),'Conserva la proporción y ocupa el espacio disponible');
+  }
+  const navigation=w.document.createElement('div');
+  navigation.innerHTML='<button style="opacity:0;pointer-events:none"><i class="fa-arrow-left"></i></button><button id="internal-back"><i class="fa-arrow-left"></i></button><div class="MuiGrid-container"><div style="pointer-events:none"><i class="fa-house"></i></div></div><div class="MuiGrid-container"><div style="pointer-events:none;opacity:0"><i class="fa-house"></i></div></div>';
+  w.document.body.append(navigation);let backs=0,homes=0;
+  const internal=navigation.querySelector('#internal-back');internal.onclick=()=>{backs++;internal.remove();};
+  const homeControl=navigation.querySelector('.MuiGrid-container');homeControl.onclick=()=>{homes++;homeControl.remove();};
+  assert.equal(w.__onxPhoneBack(),true);assert.equal(backs,1,'Atrás sale de una pantalla interna antes de cerrar la app');assert.equal(homes,0);
+  assert.equal(w.__onxPhoneBack(),true);assert.equal(homes,1,'Atrás desde una app interna vuelve al inicio ONX');
+  assert.equal(w.__onxPhoneBack(),false,'En el inicio entrega el control a Android');navigation.remove();
+  const cards=w.document.querySelector('#cards');
+  cards.insertAdjacentHTML('beforeend',card('Jugador de prueba','Llamada entrante...',true));
+  await sleep(300);
+  const calls=events.filter(e=>e.type==='call');assert.equal(calls.length,1,'Anuncia una llamada nueva');
+  const id=calls[0].id;
+  let answers=0,rejects=0;
+  const current=cards.lastElementChild;
+  current.querySelector('[data-action="answer"]').onclick=()=>answers++;
+  current.querySelector('[data-action="reject"]').onclick=()=>rejects++;
+  port.onmessage({data:JSON.stringify({type:'action',id:'old-call',action:'answer'})});
+  assert.equal(answers,0,'No contesta una llamada con identificador antiguo');
+  port.onmessage({data:JSON.stringify({type:'action',id,action:'answer'})});
+  assert.equal(answers,1,'Conecta contestar con el control real del DOM');
+  port.onmessage({data:JSON.stringify({type:'action',id,action:'reject'})});
+  assert.equal(rejects,1,'Conecta rechazar con el control real del DOM');
+  cards.insertAdjacentHTML('beforeend',card('Mensaje nuevo','Hola desde el juego').replace('/apps/calls.png','/apps/messages.png'));
+  await sleep(300);
+  assert.equal(events.filter(e=>e.type==='call').length,1,'No repite el aviso durante cambios de pantalla');
+  assert.equal(events.filter(e=>e.type==='notification').length,1,'Anuncia un nuevo mensaje una sola vez');
+  assert.equal(events.find(e=>e.type==='notification').kind,'messages','Clasifica mensajes para aplicar preferencias');
+  Object.defineProperty(w.navigator,'onLine',{value:false,configurable:true});w.__onxPhonePoll();
+  assert.equal(events.filter(e=>e.type==='status').at(-1).value,'offline','Distingue pérdida de internet');
+  Object.defineProperty(w.navigator,'onLine',{value:true,configurable:true});w.__onxPhonePoll();
+  assert.equal(events.filter(e=>e.type==='status').at(-1).value,'ready','Recupera el estado de vista web al volver internet');
+  current.remove();await sleep(300);
+  assert.equal(events.filter(e=>e.type==='callEnd' && e.id===id).length,1,'Informa el fin de la llamada para detener el tono');
+  port.onmessage({data:JSON.stringify({type:'action',id,action:'answer'})});assert.equal(answers,1,'No contesta después del fin');
+  cards.insertAdjacentHTML('beforeend',card('Jugador de prueba','Llamada entrante...',true));await sleep(300);
+  assert.equal(events.filter(e=>e.type==='call').length,2,'Detecta otra llamada del mismo contacto');
+  dom.window.close();
+  const expired=new JSDOM('<!doctype html><html><head><title>ONX</title></head><body>TOKEN EXPIRED</body></html>',{url:'https://game-fivem-ui-es.onx.gg/',runScripts:'outside-only',pretendToBeVisual:true});
+  const notices=[];expired.window.eval(source);expired.window.dispatchEvent(new expired.window.MessageEvent('message',{data:'rp-phone-connect',ports:[{postMessage:e=>notices.push(JSON.parse(e)),start(){},close(){}}]}));
+  assert.equal(notices.find(e=>e.type==='status').value,'login','Distingue sesión vencida de pérdida de internet');expired.window.close();
+  console.log('PASS: navegación Atrás, 9 tamaños, historial, llamadas, acciones, deduplicación, mensajes por categoría, pérdida/recuperación de internet y sesión vencida.');
+}
+run().catch(e=>{console.error(e);process.exit(1);});
