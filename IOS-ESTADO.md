@@ -2,7 +2,9 @@
 
 Base de aplicación nativa para iPhone con el diseño y el crédito «ONX phone · por roclic». Cada jugador introduce su enlace personal. No contiene enlaces, sesiones, certificados de Apple ni claves de ningún usuario.
 
-**Esto es código fuente, no una IPA instalable. No se ha compilado con Xcode ni probado en iPhone.** Se ha comprobado que el proyecto Xcode se puede analizar, que existen sus recursos y que el script del icono usa rutas correctamente citadas. El detector JavaScript compartido dispone de pruebas representativas en la versión Android; eso no valida WKWebView ni iOS.
+**Esto es código fuente, no una IPA instalable.** El 2 de octubre de 2026 se compiló correctamente para simulador con Xcode en GitHub Actions (commit 7917dff). Las pruebas JavaScript también pasaron y se comprobó el arranque en simulador. La captura inicial permitió detectar que el logotipo del menú no aparecía; se corrigió usando ONXBrand.imageset. El commit 0114ce9 con esa corrección pasó las pruebas, la compilación y el arranque en simulador. La captura final se revisó y confirma el logotipo y el estado «Sin enlace» en la pantalla inicial. No se ha probado en un iPhone físico, ni validado sesión, voz, Steam o llamadas de ONX en iOS. La compilación no demuestra recepción con el teléfono bloqueado.
+
+Registro verificable: https://github.com/ROCLIC/proyecto-x/actions/runs/36996251036
 
 ## Compatibilidad prevista
 
@@ -44,7 +46,7 @@ Referencia oficial: https://developer.apple.com/documentation/pushkit/responding
 
 Puedes usar un entorno macOS remoto. Se incluye `.github/workflows/ios-check.yml`, un workflow manual/de comprobación que compila para simulador sin firma usando un runner macOS de GitHub Actions. El workflow está preparado para el repositorio ROCLIC/proyecto-x. Su ejecución y resultado se deben comprobar en GitHub Actions. No compra recursos, no envía tu enlace y no crea una IPA para instalar. Revisa los límites/coste de tu cuenta antes de ejecutar trabajos remotos.
 
-Para usarlo, crea un repositorio con el contenido de esta carpeta en su raíz, incluidos `.github/` y `ONXPhone.xcodeproj/`, y ejecuta Check ONX phone iOS. Un fallo de compilación debe corregirse antes de distribuir. La firma y exportación para dispositivos/TestFlight requieren otra etapa con credenciales/provisión Apple; no están configuradas.
+El contenido ya está publicado en ROCLIC/proyecto-x, incluidos `.github/` y `ONXPhone.xcodeproj/`. Check ONX phone iOS se ejecuta al actualizar el código o manualmente. Un fallo de compilación debe corregirse antes de distribuir. La firma y exportación para dispositivos/TestFlight requieren otra etapa con credenciales/provisión Apple; no están configuradas.
 
 En un Mac con Xcode moderno: abre `ONXPhone.xcodeproj`, elige el esquema ONXPhone y compila primero para simulador. Para un iPhone físico elige tu Team y un identificador de app disponible; para la recepción nativa añade las capacidades y servidor descritos arriba. El icono 1024 × 1024 se genera con `sips` durante el build a partir de la imagen incluida. No se necesita XcodeGen ni una dependencia de aplicación externa.
 
@@ -54,12 +56,12 @@ En un Mac con Xcode moderno: abre `ONXPhone.xcodeproj`, elige el esquema ONXPhon
 
 | Función | Android 0.5 | Base iOS |
 |---|---|---|
-| Nombre, imagen, estética y crédito | APK compilada | Código escrito, sin prueba nativa |
+| Nombre, imagen, estética y crédito | APK compilada | Compila para simulador, prueba física pendiente |
 | Enlace y sesión persistentes | APK compilada | Keychain/WKWebView escritos |
 | Apertura directa y llavecita | APK compilada | Código escrito |
 | Adaptación al espacio | Detector probado con DOM | Detector compartido, WKWebView pendiente |
 | Voz, altavoz y Bluetooth | Integración, prueba física pendiente | Integración web/rutas, prueba física pendiente |
-| Mensajes/llamadas con web activa | Detector probado con DOM | Detector conectado a WKWebView, sin prueba nativa |
+| Mensajes/llamadas con web activa | Detector probado con DOM | Detector conectado a WKWebView, llamadas reales pendientes |
 | Llamada bloqueado como llamada normal | Mecanismo de presentación preparado; requiere prueba física | Pendiente de servidor, PushKit/CallKit y motor de audio |
 | App instalable | APK firmada | No hay IPA firmada |
 
@@ -69,8 +71,16 @@ No se presenta este código como equivalente completo a Android ni como una apli
 
 Se aisló el transporte en `ONXPhone/ios-transport.js` y se probó con MessagePorts reales de Node y DOM representativo: conexión, llamada, contestar, rechazar, identificador caducado, fin, reinicialización del canal y rechazo de orígenes HTTP, otro dominio o puerto no permitido. Esto no ejecuta WKWebView ni confirma compatibilidad nativa.
 
-Las pruebas reproducibles están en `tests/`: ejecuta `npm ci` y `npm test` dentro de esa carpeta. El workflow macOS las ejecuta además de intentar compilar Swift. El workflow sigue sin ejecutarse y no se ha generado una IPA.
+Las pruebas reproducibles están en `tests/`: ejecuta `npm ci` y `npm test` dentro de esa carpeta. El workflow macOS las ejecuta además de intentar compilar Swift. El workflow ya se ejecutó: las pruebas y la compilación de simulador pasaron. No se ha generado una IPA firmada.
 
 El cierre de sesión bloquea eventos de la página anterior, cancela reintentos y avisos, detiene la página y espera a borrar los datos antes de permitir una nueva conexión. La instalación y el flujo nativo siguen pendientes de pruebas.
 
-El usuario dispone ahora de GitHub y Apple Developer; el repositorio seleccionado es ROCLIC/proyecto-x. Falta configurar la identidad, firma y provisión de Apple y comprobar una compilación real. El workflow inicial no usa credenciales de firma ni registra PushKit. La integración con el servidor de llamadas y el audio nativo descrita arriba sigue pendiente.
+El usuario dispone de GitHub y de un Apple ID, pero ha confirmado que no está inscrito en Apple Developer Program. El repositorio seleccionado es ROCLIC/proyecto-x. La compilación de simulador puede realizarse sin esa inscripción. Para distribución por TestFlight y capacidades push hace falta la membresía y configurar firma/provisión. Con un Apple ID gratuito se pueden hacer pruebas personales mediante Xcode en un Mac y renovación periódica; no equivale a distribuir una IPA como la APK. El workflow inicial no usa credenciales de firma ni registra PushKit. La integración con el servidor de llamadas y el audio nativo descrita arriba sigue pendiente.
+
+## Conexión ONX investigada
+
+Se revisó el JavaScript público de ONX: la web intercambia el enlace externo por una sesión y utiliza WebSocket. Esto indica una posible vía para investigar un puente autorizado del propio personaje; no demuestra que se pueda mantener una segunda conexión ni recibir o contestar llamadas fuera del cliente. No se ha creado un servidor, verificado una llamada por ese protocolo ni implementado audio nativo. No se incluyen tokens ni código de ONX en este repositorio.
+
+Referencia de cuentas Apple: https://developer.apple.com/help/account/basics/about-your-developer-account
+
+Última comprobación de la corrección visual: https://github.com/ROCLIC/proyecto-x/actions/runs/36997186525
