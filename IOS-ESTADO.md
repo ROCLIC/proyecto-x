@@ -42,7 +42,7 @@ Referencia oficial: https://developer.apple.com/documentation/pushkit/responding
 
 ## Compilación sin Mac propio
 
-Puedes usar un entorno macOS remoto. Se incluye `.github/workflows/ios-check.yml`, un workflow manual/de comprobación que compila para simulador sin firma usando un runner macOS de GitHub Actions. **No se ha publicado ni ejecutado**; no hay repositorio ni cuenta conectados. No compra recursos, no envía tu enlace y no crea una IPA para instalar. Revisa los límites/coste de tu cuenta antes de ejecutar trabajos remotos.
+Puedes usar un entorno macOS remoto. Se incluye `.github/workflows/ios-check.yml`, un workflow manual/de comprobación que compila para simulador sin firma usando un runner macOS de GitHub Actions. El workflow está preparado para el repositorio ROCLIC/proyecto-x. Su ejecución y resultado se deben comprobar en GitHub Actions. No compra recursos, no envía tu enlace y no crea una IPA para instalar. Revisa los límites/coste de tu cuenta antes de ejecutar trabajos remotos.
 
 Para usarlo, crea un repositorio con el contenido de esta carpeta en su raíz, incluidos `.github/` y `ONXPhone.xcodeproj/`, y ejecuta Check ONX phone iOS. Un fallo de compilación debe corregirse antes de distribuir. La firma y exportación para dispositivos/TestFlight requieren otra etapa con credenciales/provisión Apple; no están configuradas.
 
@@ -73,4 +73,4 @@ Las pruebas reproducibles están en `tests/`: ejecuta `npm ci` y `npm test` dent
 
 El cierre de sesión bloquea eventos de la página anterior, cancela reintentos y avisos, detiene la página y espera a borrar los datos antes de permitir una nueva conexión. La instalación y el flujo nativo siguen pendientes de pruebas.
 
-Actualmente no se dispone de Mac, cuenta GitHub ni Apple Developer. Para avanzar a una app instalable hay que obtener acceso autorizado a un entorno macOS y a una identidad/firma Apple, y ejecutar una compilación real. No hay cuentas creadas, repositorios publicados, servicios contratados ni gastos autorizados. La integración con el servidor de llamadas y el audio nativo descrita arriba también sigue pendiente.
+El usuario dispone ahora de GitHub y Apple Developer; el repositorio seleccionado es ROCLIC/proyecto-x. Falta configurar la identidad, firma y provisión de Apple y comprobar una compilación real. El workflow inicial no usa credenciales de firma ni registra PushKit. La integración con el servidor de llamadas y el audio nativo descrita arriba sigue pendiente.
