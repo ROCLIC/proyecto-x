@@ -72,7 +72,7 @@ final class PhoneModel: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
             self.web.evaluateJavaScript("window.__onxPhonePoll && window.__onxPhonePoll()", completionHandler: nil)
             if !self.callID.isEmpty && UserDefaults.standard.object(forKey: "callVibration") as? Bool != false { AudioServicesPlaySystemSound(kSystemSoundID_Vibrate) }
         }
-        if !Vault.read().isEmpty() { load() }
+        if !Vault.read().isEmpty { load() }
     }
     deinit { network.cancel(); ticker?.invalidate(); retry?.cancel() }
     static func isPhone(_ url: URL?) -> Bool { url?.scheme == "https" && url?.host == "game-fivem-ui-es.onx.gg" && (url?.port == nil || url?.port == 443) }
@@ -138,7 +138,7 @@ final class PhoneModel: NSObject, ObservableObject, WKNavigationDelegate, WKUIDe
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { stopRinging(); reconnect() }
     func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin, initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType, decisionHandler: @escaping (WKPermissionDecision) -> Void) { decisionHandler(origin.protocol == "https" && origin.host == host && (origin.port == 0 || origin.port == 443) ? .prompt : .deny) }
     func receive(_ message: WKScriptMessage) {
-        guard !clearing, !Vault.read().isEmpty(), message.frameInfo.isMainFrame, Self.isPhone(message.frameInfo.request.url), let text = message.body as? String, text.utf8.count <= 8192,
+        guard !clearing, !Vault.read().isEmpty, message.frameInfo.isMainFrame, Self.isPhone(message.frameInfo.request.url), let text = message.body as? String, text.utf8.count <= 8192,
             let data = text.data(using: .utf8), let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any], let type = object["type"] as? String else { return }
         switch type {
         case "status":
@@ -276,7 +276,7 @@ struct PhoneView: View {
                 Image("brand_art").resizable().scaledToFit().frame(width: 88, height: 88).clipShape(RoundedRectangle(cornerRadius: 25))
                 Text("ONX phone").font(.largeTitle.weight(.medium))
                 Text("Tu ciudad, siempre cerca.").font(.subheadline).foregroundColor(.secondary)
-                if !Vault.read().isEmpty() { Button("Abrir mi celular") { model.settings = false }.buttonStyle(.borderedProminent).tint(purple) }
+                if !Vault.read().isEmpty { Button("Abrir mi celular") { model.settings = false }.buttonStyle(.borderedProminent).tint(purple) }
                 VStack(alignment: .leading, spacing: 14) {
                     Text("ENLACE PERSONAL").font(.caption).tracking(2).foregroundColor(purple)
                     TextField("Pega tu enlace de ONX", text: $link).textInputAutocapitalization(.never).disableAutocorrection(true).keyboardType(.URL).textFieldStyle(.roundedBorder)
