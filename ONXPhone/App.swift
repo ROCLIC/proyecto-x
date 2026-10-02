@@ -32,7 +32,7 @@ final class WeakBridge: NSObject, WKScriptMessageHandler {
 }
 
 final class PhoneModel: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate, UNUserNotificationCenterDelegate {
-    @Published var settings = Vault.read().isEmpty()
+    @Published var settings = Vault.read().isEmpty
     @Published var status = "Conectando…"
     @Published var incoming = false
     @Published var caller = ""

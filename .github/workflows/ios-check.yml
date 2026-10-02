@@ -26,6 +26,16 @@ jobs:
       - name: Package simulator app
         shell: bash
         run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Debug-iphonesimulator/ONXPhone.app artifacts/ONX-phone-simulator.zip
+      - name: Launch simulator app
+        shell: bash
+        run: |
+          SIM_UDID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; candidates=[d for runtime,values in devices.items() if "iOS" in runtime for d in values if d["name"].startswith("iPhone")]; print(candidates[0]["udid"])')
+          xcrun simctl boot "$SIM_UDID"
+          xcrun simctl bootstatus "$SIM_UDID" -b
+          xcrun simctl install "$SIM_UDID" build/Build/Products/Debug-iphonesimulator/ONXPhone.app
+          xcrun simctl launch --terminate-running-process "$SIM_UDID" app.roclic.onxphone
+          sleep 5
+          xcrun simctl io "$SIM_UDID" screenshot artifacts/ios-startup.png
       - uses: actions/upload-artifact@v4
         if: always()
         with:
